@@ -10,7 +10,7 @@ export const makeStorageKeys = (prefix: string) => ({
 })
 
 export const AuthContext = createContext<AuthContextValue>({
-  session: null, signin: async () => {}, signout: () => {}, status: 'idle', error: null
+  session: null, signin: async () => { }, signout: () => { }, status: 'idle', error: null
 })
 
 export function AuthProvider({
@@ -18,37 +18,45 @@ export function AuthProvider({
   config
 }: { children: React.ReactNode, config: AmvaultConnectConfig }) {
   const ttl = config.sessionTtlMs ?? DEFAULT_TTL
-  const keys = useMemo(()=> makeStorageKeys(config.storagePrefix || 'amvault'), [config.storagePrefix])
+  const keys = useMemo(() => makeStorageKeys(config.storagePrefix || 'amvault'), [config.storagePrefix])
   const [session, setSession] = useState<Session | null>(null)
   const [status, setStatus] = useState<AuthContextValue['status']>('idle')
   const [error, setError] = useState<string | null>(null)
 
   // restore
-  useEffect(()=>{
+  useEffect(() => {
     setStatus('checking')
-    try{
+    try {
       const raw = localStorage.getItem(keys.session)
       if (raw) {
         const s = JSON.parse(raw) as Session
         if (Date.now() < s.expiresAt) { setSession(s); setStatus('ready'); return }
       }
       setStatus('ready')
-    }catch(e){ setStatus('failed'); setError('Failed to load session') }
+    } catch (e) { setStatus('failed'); setError('Failed to load session') }
   }, [keys.session])
 
-  const signout = ()=>{
+  const signout = () => {
     localStorage.removeItem(keys.session)
     setSession(null)
   }
 
   const makeNonce = () => {
     const b = new Uint8Array(16); crypto.getRandomValues(b)
-    return Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('')
+    return Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('')
   }
 
   const buildMessage = (nonce: string) => {
-    const domain = window.location.host
     const origin = window.location.origin
+    if (typeof config.messageBuilder === 'function') {
+      return config.messageBuilder({
+        appName: config.appName,
+        origin,
+        chainId: config.chainId,
+        nonce
+      })
+    }
+    const domain = window.location.host
     return [
       `${domain} wants you to sign in with your account:`,
       ``,
@@ -57,11 +65,11 @@ export function AuthProvider({
       `URI: ${origin}`,
       `Chain ID: ${config.chainId}`,
       `Version: 1`,
-    ].join('\n')
+    ].join('\\n')
   }
 
-  const signin = async ()=>{
-    try{
+  const signin = async () => {
+    try {
       setError(null); setStatus('checking')
       const nonce = makeNonce()
       localStorage.setItem(keys.nonce, nonce)
@@ -73,7 +81,8 @@ export function AuthProvider({
         origin: window.location.origin,
         nonce,
         amvaultUrl: config.amvaultUrl,
-        debug: !!config.debug
+        debug: !!config.debug,
+        message: msg
       })
 
       if (!resp?.ok) throw new Error(resp?.error || 'Sign-in rejected')
@@ -82,8 +91,23 @@ export function AuthProvider({
       if (got !== nonce) throw new Error('Nonce mismatch')
       if (Number(chainId) !== config.chainId) throw new Error(`Wrong network: got ${chainId}, expected ${config.chainId}`)
 
-      const recovered = verifyMessage(msg, signature).toLowerCase()
+      // If AmVault returns the exact message it showed the user, verify against that,
+      // then sanity-check fields (nonce/origin/chainId/app).
+      const origin = window.location.origin
+      const toVerify = typeof resp.message === 'string' && resp.message.trim() ? resp.message : msg
+      const recovered = verifyMessage(toVerify, signature).toLowerCase()
       if (recovered !== String(address).toLowerCase()) throw new Error('Signature invalid (recovered != address)')
+
+      // Sanity checks if using returned message
+      if (toVerify !== msg) {
+        if (!toVerify.includes(`Nonce: ${nonce}`)) throw new Error('Signed message missing expected nonce')
+        if (!toVerify.includes(`URI: ${origin}`)) throw new Error('Signed message missing expected origin')
+        if (!toVerify.includes(`Chain ID: ${config.chainId}`)) throw new Error('Signed message missing expected chain id')
+        const enforce = config.enforceAppName ?? true
+        if (enforce && !toVerify.includes(`App: ${config.appName}`)) {
+          throw new Error('Signed message app does not match configuration')
+        }
+      }
 
       // Optional registry checks
       if (config.registry?.isRegistered) {
@@ -96,22 +120,22 @@ export function AuthProvider({
       if (typeof resp.ain === 'string' && resp.ain.trim()) ain = resp.ain.trim()
       else if (typeof resp.amid === 'string' && resp.amid.trim()) ain = resp.amid.trim()
       if (!ain && config.registry?.getAin) {
-        try { const gotAin = await config.registry.getAin(address); if (gotAin) ain = gotAin } catch {}
+        try { const gotAin = await config.registry.getAin(address); if (gotAin) ain = gotAin } catch { }
       }
-      if (!ain) ain = `ain-${address.slice(2,8)}`
+      if (!ain) ain = `ain-${address.slice(2, 8)}`
 
       const now = Date.now()
       const sess: Session = { ain, address, issuedAt: now, expiresAt: now + ttl }
       localStorage.setItem(keys.session, JSON.stringify(sess))
       setSession(sess); setStatus('ready')
-    }catch(e:any){
+    } catch (e: any) {
       setError(e?.message || 'Sign-in failed'); setStatus('ready')
-    }finally{
+    } finally {
       localStorage.removeItem(keys.nonce)
     }
   }
 
-  const value = useMemo<AuthContextValue>(()=>({
+  const value = useMemo<AuthContextValue>(() => ({
     session, signin, signout, status, error
   }), [session, status, error])
 

@@ -15,10 +15,20 @@
     "dev": "tsc -p tsconfig.json --watch"
   },
   "peerDependencies": {
-    "react": ">=18",
-    "ethers": ">=6.0.0"
+    "ethers": ">=6.0.0",
+    "react": ">=18"
   },
   "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
     "typescript": "^5.4.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alkebuleum/amvault-connect.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Alkebuleum/amvault-connect/issues"
+  },
+  "homepage": "https://github.com/Alkebuleum/amvault-connect#readme"
 }

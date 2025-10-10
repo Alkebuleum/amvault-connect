@@ -58,10 +58,10 @@ function requestPopup<T = any>({
         if (timer) window.clearTimeout(timer)
         window.removeEventListener('message', onMsg as any)
         window.removeEventListener('storage', onStorage as any)
-        try { closeSharedPopup() } catch {}
+        try { closeSharedPopup() } catch { }
       }
       const finishOk = (data: any) => { if (settled) return; settled = true; cleanup(); resolve(data as T) }
-      const finishErr = (err: any) => { if (settled) return; settled = true; cleanup(); reject(err instanceof Error? err : new Error(String(err))) }
+      const finishErr = (err: any) => { if (settled) return; settled = true; cleanup(); reject(err instanceof Error ? err : new Error(String(err))) }
 
       const onMsg = (ev: MessageEvent) => {
         if (amvaultOrigin && ev.origin !== amvaultOrigin) return
@@ -84,7 +84,7 @@ function requestPopup<T = any>({
           if (method === 'signin' && data?.type === 'amvault:auth') return finishOk(data)
           if (method === 'eth_sendTransaction' && data?.type === 'amvault:tx') return finishOk(data)
           if (data?.type === 'amvault:error') return finishErr(new Error(data.error || 'Request rejected'))
-        } catch {}
+        } catch { }
       }
       window.addEventListener('storage', onStorage as any)
 
@@ -93,13 +93,25 @@ function requestPopup<T = any>({
   })
 }
 
-export async function openSignin(args: { app: string, chainId: number, origin: string, nonce: string, amvaultUrl: string, debug?: boolean }): Promise<SigninResp> {
+
+export async function openSignin(args: {
+  app: string,
+  chainId: number,
+  origin: string,
+  nonce: string,
+  amvaultUrl: string,
+  debug?: boolean,
+  message?: string
+}): Promise<SigninResp> {
+  const payload = args.message ? { message: args.message } : undefined
   return requestPopup<SigninResp>({
     method: 'signin',
     app: args.app, chainId: args.chainId, origin: args.origin,
-    amvaultUrl: args.amvaultUrl, nonce: args.nonce, debug: !!args.debug
+    amvaultUrl: args.amvaultUrl, nonce: args.nonce, debug: !!args.debug,
+    payload
   })
 }
+
 
 export async function sendTransaction(req: {
   chainId: number,
@@ -109,7 +121,7 @@ export async function sendTransaction(req: {
   gas?: number,
   maxFeePerGasGwei?: number,
   maxPriorityFeePerGasGwei?: number
-}, opts: { app: string, amvaultUrl: string, timeoutMs?: number, debug?: boolean } ): Promise<string> {
+}, opts: { app: string, amvaultUrl: string, timeoutMs?: number, debug?: boolean }): Promise<string> {
   const origin = window.location.origin
   const payload = {
     to: req.to, value: req.value, data: req.data, gas: req.gas,
