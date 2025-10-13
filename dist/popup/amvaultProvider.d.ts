@@ -6,6 +6,7 @@ export declare function openSignin(args: {
     nonce: string;
     amvaultUrl: string;
     debug?: boolean;
+    message?: string;
 }): Promise<SigninResp>;
 export declare function sendTransaction(req: {
     chainId: number;

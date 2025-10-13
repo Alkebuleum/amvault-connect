@@ -47,8 +47,16 @@ export function AuthProvider({ children, config }) {
         return Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
     };
     const buildMessage = (nonce) => {
-        const domain = window.location.host;
         const origin = window.location.origin;
+        if (typeof config.messageBuilder === 'function') {
+            return config.messageBuilder({
+                appName: config.appName,
+                origin,
+                chainId: config.chainId,
+                nonce
+            });
+        }
+        const domain = window.location.host;
         return [
             `${domain} wants you to sign in with your account:`,
             ``,
@@ -57,10 +65,10 @@ export function AuthProvider({ children, config }) {
             `URI: ${origin}`,
             `Chain ID: ${config.chainId}`,
             `Version: 1`,
-        ].join('\n');
+        ].join('\\n');
     };
     const signin = async () => {
-        var _a, _b;
+        var _a, _b, _c;
         try {
             setError(null);
             setStatus('checking');
@@ -73,7 +81,8 @@ export function AuthProvider({ children, config }) {
                 origin: window.location.origin,
                 nonce,
                 amvaultUrl: config.amvaultUrl,
-                debug: !!config.debug
+                debug: !!config.debug,
+                message: msg
             });
             if (!(resp === null || resp === void 0 ? void 0 : resp.ok))
                 throw new Error((resp === null || resp === void 0 ? void 0 : resp.error) || 'Sign-in rejected');
@@ -84,11 +93,28 @@ export function AuthProvider({ children, config }) {
                 throw new Error('Nonce mismatch');
             if (Number(chainId) !== config.chainId)
                 throw new Error(`Wrong network: got ${chainId}, expected ${config.chainId}`);
-            const recovered = verifyMessage(msg, signature).toLowerCase();
+            // If AmVault returns the exact message it showed the user, verify against that,
+            // then sanity-check fields (nonce/origin/chainId/app).
+            const origin = window.location.origin;
+            const toVerify = typeof resp.message === 'string' && resp.message.trim() ? resp.message : msg;
+            const recovered = verifyMessage(toVerify, signature).toLowerCase();
             if (recovered !== String(address).toLowerCase())
                 throw new Error('Signature invalid (recovered != address)');
+            // Sanity checks if using returned message
+            if (toVerify !== msg) {
+                if (!toVerify.includes(`Nonce: ${nonce}`))
+                    throw new Error('Signed message missing expected nonce');
+                if (!toVerify.includes(`URI: ${origin}`))
+                    throw new Error('Signed message missing expected origin');
+                if (!toVerify.includes(`Chain ID: ${config.chainId}`))
+                    throw new Error('Signed message missing expected chain id');
+                const enforce = (_a = config.enforceAppName) !== null && _a !== void 0 ? _a : true;
+                if (enforce && !toVerify.includes(`App: ${config.appName}`)) {
+                    throw new Error('Signed message app does not match configuration');
+                }
+            }
             // Optional registry checks
-            if ((_a = config.registry) === null || _a === void 0 ? void 0 : _a.isRegistered) {
+            if ((_b = config.registry) === null || _b === void 0 ? void 0 : _b.isRegistered) {
                 const ok = await config.registry.isRegistered(address);
                 if (!ok)
                     throw new Error('Address not registered');
@@ -99,7 +125,7 @@ export function AuthProvider({ children, config }) {
                 ain = resp.ain.trim();
             else if (typeof resp.amid === 'string' && resp.amid.trim())
                 ain = resp.amid.trim();
-            if (!ain && ((_b = config.registry) === null || _b === void 0 ? void 0 : _b.getAin)) {
+            if (!ain && ((_c = config.registry) === null || _c === void 0 ? void 0 : _c.getAin)) {
                 try {
                     const gotAin = await config.registry.getAin(address);
                     if (gotAin)

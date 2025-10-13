@@ -93,10 +93,12 @@ function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce
     });
 }
 export async function openSignin(args) {
+    const payload = args.message ? { message: args.message } : undefined;
     return requestPopup({
         method: 'signin',
         app: args.app, chainId: args.chainId, origin: args.origin,
-        amvaultUrl: args.amvaultUrl, nonce: args.nonce, debug: !!args.debug
+        amvaultUrl: args.amvaultUrl, nonce: args.nonce, debug: !!args.debug,
+        payload
     });
 }
 export async function sendTransaction(req, opts) {

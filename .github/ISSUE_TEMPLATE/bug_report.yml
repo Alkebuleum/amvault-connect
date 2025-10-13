@@ -1,0 +1,19 @@
+name: Bug report
+description: File a bug report
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: SDK version
+      placeholder: e.g., 0.1.2
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      placeholder: Steps to reproduce, expected vs actual…
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / stack traces
+      render: shell

@@ -1,0 +1,7 @@
+.github
+src
+test
+examples
+*.config.*
+.vscode
+.DS_Store

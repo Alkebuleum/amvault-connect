@@ -27,6 +27,8 @@ export type SigninResp = {
     ain?: string;
     amid?: string;
     error?: string;
+    /** Optional: AmVault can echo back the exact message it asked the user to sign */
+    message?: string;
 };
 export type TxReq = {
     chainId: number;
@@ -56,6 +58,14 @@ export type AmvaultConnectConfig = {
     debug?: boolean;
     storagePrefix?: string;
     sessionTtlMs?: number;
-    /** Optional: provide registry hooks if you need them */
     registry?: RegistryAdapter;
+    /** Optional override to construct the sign-in message */
+    messageBuilder?: (info: {
+        appName: string;
+        origin: string;
+        chainId: number;
+        nonce: string;
+    }) => string;
+    /** When verifying a message returned from AmVault, require `App: appName` to match. Default true. */
+    enforceAppName?: boolean;
 };
