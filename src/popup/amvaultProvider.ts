@@ -22,7 +22,7 @@ function requestPopup<T = any>({
   amvaultUrl,
   payload,
   nonce = makeNonce(),
-  timeoutMs = 50000,
+  timeoutMs = 120000,
   debug = false
 }: {
   method: 'signin' | 'eth_sendTransaction',
@@ -134,7 +134,7 @@ export async function sendTransaction(req: {
     origin,
     amvaultUrl: opts.amvaultUrl,
     payload,
-    timeoutMs: opts.timeoutMs ?? 50000,
+    timeoutMs: opts.timeoutMs ?? 120000,
     debug: !!opts.debug
   })
   if (!resp.ok) throw new Error(resp.error || 'Transaction rejected')

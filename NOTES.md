@@ -3,7 +3,10 @@
 - Repo: https://github.com/Alkebuleum/amvault-connect
 - NPM: https://www.npmjs.com/package/amvault-connect
 
-## Local publish
+## First commit to git 
+
+
+## Second publish npm (this is how to publish changes to the sdk)
 ```bash
 npm login
 npm version patch
