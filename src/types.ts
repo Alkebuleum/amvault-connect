@@ -71,3 +71,20 @@ export type AmvaultConnectConfig = {
   /** When verifying a message returned from AmVault, require `App: appName` to match. Default true. */
   enforceAppName?: boolean
 }
+
+// NEW: added 1/28/2026
+export type SignMessageArgs = {
+  chainId: number
+  message: string
+}
+
+export type SignMessageResp = {
+  ok: boolean
+  address: string
+  signature: string
+  chainId: number
+  nonce: string
+  error?: string
+  message?: string
+}
+

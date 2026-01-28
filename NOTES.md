@@ -4,6 +4,10 @@
 - NPM: https://www.npmjs.com/package/amvault-connect
 
 ## First commit to git 
+git status
+# If it's just your intended edits:
+git add -A
+git commit -m "chore: prep release (docs + timeout default 120s)"
 
 
 ## Second publish npm (this is how to publish changes to the sdk)
