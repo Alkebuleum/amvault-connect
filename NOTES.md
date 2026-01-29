@@ -7,12 +7,12 @@
 git status
 # If it's just your intended edits:
 git add -A
-git commit -m "chore: prep release (docs + timeout default 120s)"
+git commit -m "chore: add signMessage"
 
 
 ## Second publish npm (this is how to publish changes to the sdk)
 ```bash
-npm login
+npm login (un:alk)
 npm version patch
 npm run build
 npm publish --access public
