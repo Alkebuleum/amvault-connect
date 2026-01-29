@@ -1,5 +1,12 @@
+// popup/amvaultProvider.ts
 import { preOpenAmvaultPopup, closeSharedPopup } from './amvaultPopup'
-import type { SigninResp, SendTxResp, SignMessageResp, SignMessageArgs } from '../types'
+import type {
+  SigninResp,
+  SendTxResp,
+  SignMessageResp,
+  SignMessageArgs,
+  PopupOpts,
+} from '../types'
 
 const STORAGE_FALLBACK_KEYS = ['amid:lastResult', 'amvault:payload']
 
@@ -27,6 +34,7 @@ function requestPopup<T = any>({
   nonce = makeNonce(),
   timeoutMs = 120000,
   debug = false,
+  keepPopupOpen = false,
 }: {
   method: 'signin' | 'eth_sendTransaction' | 'sign_message'
   app: string
@@ -37,14 +45,13 @@ function requestPopup<T = any>({
   nonce?: string
   timeoutMs?: number
   debug?: boolean
+  keepPopupOpen?: boolean
 }): Promise<T> {
   return new Promise((resolve, reject) => {
     try {
       const url = new URL(amvaultUrl)
 
-      // IMPORTANT:
-      // Your AmVault app routes message signing via the same entry as signin.
-      // So sign_message must still open AmVault with method=signin.
+      // AmVault routes message signing via the same entry as signin.
       const amvaultMethod = method === 'sign_message' ? 'signin' : method
 
       url.searchParams.set('method', amvaultMethod)
@@ -72,9 +79,11 @@ function requestPopup<T = any>({
         if (timer) window.clearTimeout(timer)
         window.removeEventListener('message', onMsg as any)
         window.removeEventListener('storage', onStorage as any)
-        try {
-          closeSharedPopup()
-        } catch { }
+        if (!keepPopupOpen) {
+          try {
+            closeSharedPopup()
+          } catch { }
+        }
       }
 
       const finishOk = (data: any) => {
@@ -98,15 +107,12 @@ function requestPopup<T = any>({
         if (!data) return
         if (debug) console.log('[amvault][pm]', data)
 
-        // signin AND sign_message both return amvault:auth
         if ((method === 'signin' || method === 'sign_message') && data.type === 'amvault:auth') {
           return finishOk(data)
         }
-
         if (method === 'eth_sendTransaction' && data.type === 'amvault:tx') {
           return finishOk(data)
         }
-
         if (data.type === 'amvault:error') {
           return finishErr(new Error(data.error || 'Request rejected'))
         }
@@ -123,11 +129,9 @@ function requestPopup<T = any>({
           if ((method === 'signin' || method === 'sign_message') && data?.type === 'amvault:auth') {
             return finishOk(data)
           }
-
           if (method === 'eth_sendTransaction' && data?.type === 'amvault:tx') {
             return finishOk(data)
           }
-
           if (data?.type === 'amvault:error') {
             return finishErr(new Error(data.error || 'Request rejected'))
           }
@@ -135,7 +139,10 @@ function requestPopup<T = any>({
       }
       window.addEventListener('storage', onStorage as any)
 
-      timer = window.setTimeout(() => finishErr(new Error('Timed out waiting for AmVault')), timeoutMs)
+      timer = window.setTimeout(
+        () => finishErr(new Error('Timed out waiting for AmVault')),
+        timeoutMs
+      )
     } catch (e) {
       reject(e)
     }
@@ -149,7 +156,9 @@ export async function openSignin(args: {
   nonce: string
   amvaultUrl: string
   debug?: boolean
+  timeoutMs?: number
   message?: string
+  keepPopupOpen?: boolean
 }): Promise<SigninResp> {
   const payload = args.message ? { message: args.message } : undefined
   return requestPopup<SigninResp>({
@@ -160,12 +169,12 @@ export async function openSignin(args: {
     amvaultUrl: args.amvaultUrl,
     nonce: args.nonce,
     debug: !!args.debug,
+    timeoutMs: args.timeoutMs ?? 120000,
     payload,
+    keepPopupOpen: !!args.keepPopupOpen,
   })
 }
 
-// NEW: open a sign-message popup flow.
-// Note: it still loads AmVault with method=signin, but we mark locally as sign_message.
 export async function openSignMessage(args: {
   app: string
   chainId: number
@@ -173,7 +182,9 @@ export async function openSignMessage(args: {
   nonce: string
   amvaultUrl: string
   debug?: boolean
+  timeoutMs?: number
   message: string
+  keepPopupOpen?: boolean
 }): Promise<SignMessageResp> {
   return requestPopup<SignMessageResp>({
     method: 'sign_message',
@@ -183,15 +194,13 @@ export async function openSignMessage(args: {
     amvaultUrl: args.amvaultUrl,
     nonce: args.nonce,
     debug: !!args.debug,
+    timeoutMs: args.timeoutMs ?? 120000,
     payload: { message: args.message },
+    keepPopupOpen: !!args.keepPopupOpen,
   })
 }
 
-// NEW: high-level helper like sendTransaction()
-export async function signMessage(
-  req: SignMessageArgs,
-  opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean }
-): Promise<string> {
+export async function signMessage(req: SignMessageArgs, opts: PopupOpts): Promise<string> {
   const origin = window.location.origin
   const nonce = makeNonce()
 
@@ -202,6 +211,8 @@ export async function signMessage(
     nonce,
     amvaultUrl: opts.amvaultUrl,
     debug: !!opts.debug,
+    timeoutMs: opts.timeoutMs,
+    keepPopupOpen: !!opts.keepPopupOpen,
     message: req.message,
   })
 
@@ -220,7 +231,7 @@ export async function sendTransaction(
     maxFeePerGasGwei?: number
     maxPriorityFeePerGasGwei?: number
   },
-  opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean }
+  opts: PopupOpts
 ): Promise<string> {
   const origin = window.location.origin
   const payload = {
@@ -241,6 +252,7 @@ export async function sendTransaction(
     payload,
     timeoutMs: opts.timeoutMs ?? 120000,
     debug: !!opts.debug,
+    keepPopupOpen: !!opts.keepPopupOpen,
   })
 
   if (!resp.ok) throw new Error(resp.error || 'Transaction rejected')
