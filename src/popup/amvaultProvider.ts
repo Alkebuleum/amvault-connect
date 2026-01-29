@@ -259,3 +259,8 @@ export async function sendTransaction(
   if (!resp.txHash) throw new Error('No txHash returned from AmVault')
   return resp.txHash
 }
+
+
+export function prewarmPopup() {
+  preOpenAmvaultPopup()
+}

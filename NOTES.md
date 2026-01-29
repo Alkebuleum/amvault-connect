@@ -7,7 +7,7 @@
 git status
 # If it's just your intended edits:
 git add -A
-git commit -m "chore: add signMessage"
+git commit -m "add option to keep pop up open"
 
 
 ## Second publish npm (this is how to publish changes to the sdk)

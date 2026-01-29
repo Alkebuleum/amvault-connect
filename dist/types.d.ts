@@ -82,3 +82,11 @@ export type SignMessageResp = {
     error?: string;
     message?: string;
 };
+export type PopupOpts = {
+    app: string;
+    amvaultUrl: string;
+    timeoutMs?: number;
+    debug?: boolean;
+    /** Keep the shared popup open after a response, so the next call won't be popup-blocked */
+    keepPopupOpen?: boolean;
+};

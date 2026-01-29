@@ -1,4 +1,4 @@
-import type { SigninResp, SignMessageResp, SignMessageArgs } from '../types';
+import type { SigninResp, SignMessageResp, SignMessageArgs, PopupOpts } from '../types';
 export declare function openSignin(args: {
     app: string;
     chainId: number;
@@ -6,7 +6,9 @@ export declare function openSignin(args: {
     nonce: string;
     amvaultUrl: string;
     debug?: boolean;
+    timeoutMs?: number;
     message?: string;
+    keepPopupOpen?: boolean;
 }): Promise<SigninResp>;
 export declare function openSignMessage(args: {
     app: string;
@@ -15,14 +17,11 @@ export declare function openSignMessage(args: {
     nonce: string;
     amvaultUrl: string;
     debug?: boolean;
-    message: string;
-}): Promise<SignMessageResp>;
-export declare function signMessage(req: SignMessageArgs, opts: {
-    app: string;
-    amvaultUrl: string;
     timeoutMs?: number;
-    debug?: boolean;
-}): Promise<string>;
+    message: string;
+    keepPopupOpen?: boolean;
+}): Promise<SignMessageResp>;
+export declare function signMessage(req: SignMessageArgs, opts: PopupOpts): Promise<string>;
 export declare function sendTransaction(req: {
     chainId: number;
     to?: string;
@@ -31,9 +30,4 @@ export declare function sendTransaction(req: {
     gas?: number;
     maxFeePerGasGwei?: number;
     maxPriorityFeePerGasGwei?: number;
-}, opts: {
-    app: string;
-    amvaultUrl: string;
-    timeoutMs?: number;
-    debug?: boolean;
-}): Promise<string>;
+}, opts: PopupOpts): Promise<string>;

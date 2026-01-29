@@ -1,3 +1,4 @@
+// popup/amvaultProvider.ts
 import { preOpenAmvaultPopup, closeSharedPopup } from './amvaultPopup';
 const STORAGE_FALLBACK_KEYS = ['amid:lastResult', 'amvault:payload'];
 function base64url(json) {
@@ -12,13 +13,11 @@ function makeNonce() {
     crypto.getRandomValues(b);
     return Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('');
 }
-function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce = makeNonce(), timeoutMs = 120000, debug = false, }) {
+function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce = makeNonce(), timeoutMs = 120000, debug = false, keepPopupOpen = false, }) {
     return new Promise((resolve, reject) => {
         try {
             const url = new URL(amvaultUrl);
-            // IMPORTANT:
-            // Your AmVault app routes message signing via the same entry as signin.
-            // So sign_message must still open AmVault with method=signin.
+            // AmVault routes message signing via the same entry as signin.
             const amvaultMethod = method === 'sign_message' ? 'signin' : method;
             url.searchParams.set('method', amvaultMethod);
             url.searchParams.set('app', app);
@@ -45,10 +44,12 @@ function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce
                     window.clearTimeout(timer);
                 window.removeEventListener('message', onMsg);
                 window.removeEventListener('storage', onStorage);
-                try {
-                    closeSharedPopup();
+                if (!keepPopupOpen) {
+                    try {
+                        closeSharedPopup();
+                    }
+                    catch { }
                 }
-                catch { }
             };
             const finishOk = (data) => {
                 if (settled)
@@ -74,7 +75,6 @@ function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce
                     return;
                 if (debug)
                     console.log('[amvault][pm]', data);
-                // signin AND sign_message both return amvault:auth
                 if ((method === 'signin' || method === 'sign_message') && data.type === 'amvault:auth') {
                     return finishOk(data);
                 }
@@ -116,6 +116,7 @@ function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce
     });
 }
 export async function openSignin(args) {
+    var _a;
     const payload = args.message ? { message: args.message } : undefined;
     return requestPopup({
         method: 'signin',
@@ -125,12 +126,13 @@ export async function openSignin(args) {
         amvaultUrl: args.amvaultUrl,
         nonce: args.nonce,
         debug: !!args.debug,
+        timeoutMs: (_a = args.timeoutMs) !== null && _a !== void 0 ? _a : 120000,
         payload,
+        keepPopupOpen: !!args.keepPopupOpen,
     });
 }
-// NEW: open a sign-message popup flow.
-// Note: it still loads AmVault with method=signin, but we mark locally as sign_message.
 export async function openSignMessage(args) {
+    var _a;
     return requestPopup({
         method: 'sign_message',
         app: args.app,
@@ -139,10 +141,11 @@ export async function openSignMessage(args) {
         amvaultUrl: args.amvaultUrl,
         nonce: args.nonce,
         debug: !!args.debug,
+        timeoutMs: (_a = args.timeoutMs) !== null && _a !== void 0 ? _a : 120000,
         payload: { message: args.message },
+        keepPopupOpen: !!args.keepPopupOpen,
     });
 }
-// NEW: high-level helper like sendTransaction()
 export async function signMessage(req, opts) {
     const origin = window.location.origin;
     const nonce = makeNonce();
@@ -153,6 +156,8 @@ export async function signMessage(req, opts) {
         nonce,
         amvaultUrl: opts.amvaultUrl,
         debug: !!opts.debug,
+        timeoutMs: opts.timeoutMs,
+        keepPopupOpen: !!opts.keepPopupOpen,
         message: req.message,
     });
     if (!(resp === null || resp === void 0 ? void 0 : resp.ok))
@@ -181,6 +186,7 @@ export async function sendTransaction(req, opts) {
         payload,
         timeoutMs: (_a = opts.timeoutMs) !== null && _a !== void 0 ? _a : 120000,
         debug: !!opts.debug,
+        keepPopupOpen: !!opts.keepPopupOpen,
     });
     if (!resp.ok)
         throw new Error(resp.error || 'Transaction rejected');
