@@ -5,7 +5,9 @@ import type {
   SendTxResp,
   SignMessageResp,
   SignMessageArgs,
-  PopupOpts,
+  // NEW (you must add these in ../types.ts)
+  MultiTxReq,
+  SendMultiTxResp,
 } from '../types'
 
 const STORAGE_FALLBACK_KEYS = ['amid:lastResult', 'amvault:payload']
@@ -110,9 +112,16 @@ function requestPopup<T = any>({
         if ((method === 'signin' || method === 'sign_message') && data.type === 'amvault:auth') {
           return finishOk(data)
         }
+
         if (method === 'eth_sendTransaction' && data.type === 'amvault:tx') {
           return finishOk(data)
         }
+
+        // NEW: multi-tx response
+        if (method === 'eth_sendTransaction' && data.type === 'amvault:txs') {
+          return finishOk(data)
+        }
+
         if (data.type === 'amvault:error') {
           return finishErr(new Error(data.error || 'Request rejected'))
         }
@@ -129,9 +138,16 @@ function requestPopup<T = any>({
           if ((method === 'signin' || method === 'sign_message') && data?.type === 'amvault:auth') {
             return finishOk(data)
           }
+
           if (method === 'eth_sendTransaction' && data?.type === 'amvault:tx') {
             return finishOk(data)
           }
+
+          // NEW: multi-tx response
+          if (method === 'eth_sendTransaction' && data?.type === 'amvault:txs') {
+            return finishOk(data)
+          }
+
           if (data?.type === 'amvault:error') {
             return finishErr(new Error(data.error || 'Request rejected'))
           }
@@ -200,7 +216,11 @@ export async function openSignMessage(args: {
   })
 }
 
-export async function signMessage(req: SignMessageArgs, opts: PopupOpts): Promise<string> {
+// PopupOpts removed: inline the opts object type (same fields as before)
+export async function signMessage(
+  req: SignMessageArgs,
+  opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean; keepPopupOpen?: boolean }
+): Promise<string> {
   const origin = window.location.origin
   const nonce = makeNonce()
 
@@ -221,6 +241,7 @@ export async function signMessage(req: SignMessageArgs, opts: PopupOpts): Promis
   return resp.signature
 }
 
+// PopupOpts removed: inline the opts object type (same fields as before)
 export async function sendTransaction(
   req: {
     chainId: number
@@ -231,7 +252,7 @@ export async function sendTransaction(
     maxFeePerGasGwei?: number
     maxPriorityFeePerGasGwei?: number
   },
-  opts: PopupOpts
+  opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean; keepPopupOpen?: boolean }
 ): Promise<string> {
   const origin = window.location.origin
   const payload = {
@@ -260,7 +281,28 @@ export async function sendTransaction(
   return resp.txHash
 }
 
+// NEW: multi-tx (single popup, AmVault executes sequentially)
+// AmVault should return data.type === 'amvault:txs'
+export async function sendTransactions(
+  req: MultiTxReq,
+  opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean; keepPopupOpen?: boolean }
+): Promise<SendMultiTxResp['results']> {
+  const origin = window.location.origin
 
-export function prewarmPopup() {
-  preOpenAmvaultPopup()
+  const resp = await requestPopup<SendMultiTxResp>({
+    method: 'eth_sendTransaction', // keep compatible; payload.txs triggers multi on AmVault side
+    app: opts.app,
+    chainId: req.chainId,
+    origin,
+    amvaultUrl: opts.amvaultUrl,
+    payload: { txs: req.txs, failFast: req.failFast ?? true },
+    timeoutMs: opts.timeoutMs ?? 120000,
+    debug: !!opts.debug,
+    keepPopupOpen: !!opts.keepPopupOpen,
+  })
+
+  //if (!resp.ok) throw new Error(resp.error || 'Batch transaction rejected')
+  if (!resp.results) throw new Error(resp.error || 'No results returned from AmVault')
+  return resp.results
+
 }

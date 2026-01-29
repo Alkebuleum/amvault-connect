@@ -88,14 +88,29 @@ export type SignMessageResp = {
   message?: string
 }
 
-// ✅ add near the other exported types
-export type PopupOpts = {
-  app: string
-  amvaultUrl: string
-  timeoutMs?: number
-  debug?: boolean
-  /** Keep the shared popup open after a response, so the next call won't be popup-blocked */
-  keepPopupOpen?: boolean
+export type MultiTxReq = {
+  chainId: number
+  txs: Array<{
+    to?: string
+    data?: string
+    value?: string | number | bigint
+    gas?: number
+    maxFeePerGasGwei?: number
+    maxPriorityFeePerGasGwei?: number
+  }>
+  failFast?: boolean
+}
+
+export type SendMultiTxResp = {
+  ok: boolean
+  nonce: string
+  chainId: number
+  results: Array<{
+    ok: boolean
+    txHash?: string
+    error?: string
+  }>
+  error?: string
 }
 
 

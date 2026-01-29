@@ -31,3 +31,4 @@ export declare function sendTransaction(req: {
     maxFeePerGasGwei?: number;
     maxPriorityFeePerGasGwei?: number;
 }, opts: PopupOpts): Promise<string>;
+export declare function prewarmPopup(): void;
