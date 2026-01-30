@@ -7,7 +7,7 @@
 git status
 # If it's just your intended edits:
 git add -A
-git commit -m "add option to keep pop up open"
+git commit -m "add option to keep pop up open v3"
 
 
 ## Second publish npm (this is how to publish changes to the sdk)

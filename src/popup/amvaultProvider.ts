@@ -290,19 +290,22 @@ export async function sendTransactions(
   const origin = window.location.origin
 
   const resp = await requestPopup<SendMultiTxResp>({
-    method: 'eth_sendTransaction', // keep compatible; payload.txs triggers multi on AmVault side
+    method: 'eth_sendTransaction',
     app: opts.app,
     chainId: req.chainId,
     origin,
     amvaultUrl: opts.amvaultUrl,
-    payload: { txs: req.txs, failFast: req.failFast ?? true },
+    payload: {
+      txs: req.txs,
+      failFast: req.failFast ?? true,
+      preflight: req.preflight, // ✅ NEW
+    },
     timeoutMs: opts.timeoutMs ?? 120000,
     debug: !!opts.debug,
     keepPopupOpen: !!opts.keepPopupOpen,
   })
 
-  //if (!resp.ok) throw new Error(resp.error || 'Batch transaction rejected')
   if (!resp.results) throw new Error(resp.error || 'No results returned from AmVault')
   return resp.results
-
 }
+

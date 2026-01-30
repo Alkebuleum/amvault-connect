@@ -88,6 +88,35 @@ export type SignMessageResp = {
   message?: string
 }
 
+// Multi transaction and gas sponsorships
+
+export type BridgeFlow =
+  | 'bridge_usdc_to_mah' // Polygon/Amoy approve+deposit that mints MAH on Alkebuleum
+  // future:
+  // | 'bridge_mah_to_usdc'
+  ;
+
+export type GasTopupHint = {
+  /** If true, AmVault may auto-topup native gas on req.chainId before executing txs */
+  enabled: boolean;
+
+  /**
+   * Optional hints (wei). AmVault should treat these as *hints* and clamp/override
+   * to its own safe defaults to prevent abuse.
+   */
+  minBalanceWei?: string;
+  targetBalanceWei?: string;
+};
+
+export type MultiTxPreflight = {
+  /** Lets AmVault know *why* it's doing preflight checks */
+  flow?: BridgeFlow;
+
+  /** Ask AmVault to ensure user has enough native gas before running the batch */
+  gasTopup?: GasTopupHint;
+};
+
+
 export type MultiTxReq = {
   chainId: number
   txs: Array<{
@@ -99,7 +128,11 @@ export type MultiTxReq = {
     maxPriorityFeePerGasGwei?: number
   }>
   failFast?: boolean
+
+  // NEW:
+  preflight?: MultiTxPreflight
 }
+
 
 export type SendMultiTxResp = {
   ok: boolean
@@ -111,6 +144,19 @@ export type SendMultiTxResp = {
     error?: string
   }>
   error?: string
+
+  // OPTIONAL NEW:
+  preflightResult?: {
+    gasTopup?: {
+      performed: boolean
+      ok: boolean
+      txHash?: string
+      error?: string
+      startingBalanceWei?: string
+      endingBalanceWei?: string
+    }
+  }
 }
+
 
 
