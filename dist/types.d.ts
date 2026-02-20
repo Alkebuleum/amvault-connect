@@ -82,6 +82,23 @@ export type SignMessageResp = {
     error?: string;
     message?: string;
 };
+export type BridgeFlow = 'bridge_usdc_to_mah';
+export type GasTopupHint = {
+    /** If true, AmVault may auto-topup native gas on req.chainId before executing txs */
+    enabled: boolean;
+    /**
+     * Optional hints (wei). AmVault should treat these as *hints* and clamp/override
+     * to its own safe defaults to prevent abuse.
+     */
+    minBalanceWei?: string;
+    targetBalanceWei?: string;
+};
+export type MultiTxPreflight = {
+    /** Lets AmVault know *why* it's doing preflight checks */
+    flow?: BridgeFlow;
+    /** Ask AmVault to ensure user has enough native gas before running the batch */
+    gasTopup?: GasTopupHint;
+};
 export type MultiTxReq = {
     chainId: number;
     txs: Array<{
@@ -93,6 +110,7 @@ export type MultiTxReq = {
         maxPriorityFeePerGasGwei?: number;
     }>;
     failFast?: boolean;
+    preflight?: MultiTxPreflight;
 };
 export type SendMultiTxResp = {
     ok: boolean;
@@ -104,4 +122,14 @@ export type SendMultiTxResp = {
         error?: string;
     }>;
     error?: string;
+    preflightResult?: {
+        gasTopup?: {
+            performed: boolean;
+            ok: boolean;
+            txHash?: string;
+            error?: string;
+            startingBalanceWei?: string;
+            endingBalanceWei?: string;
+        };
+    };
 };
