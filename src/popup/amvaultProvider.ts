@@ -5,7 +5,6 @@ import type {
   SendTxResp,
   SignMessageResp,
   SignMessageArgs,
-  // NEW (you must add these in ../types.ts)
   MultiTxReq,
   SendMultiTxResp,
 } from '../types'
@@ -117,7 +116,7 @@ function requestPopup<T = any>({
           return finishOk(data)
         }
 
-        // NEW: multi-tx response
+        // multi-tx response
         if (method === 'eth_sendTransaction' && data.type === 'amvault:txs') {
           return finishOk(data)
         }
@@ -143,7 +142,7 @@ function requestPopup<T = any>({
             return finishOk(data)
           }
 
-          // NEW: multi-tx response
+          // multi-tx response
           if (method === 'eth_sendTransaction' && data?.type === 'amvault:txs') {
             return finishOk(data)
           }
@@ -216,7 +215,6 @@ export async function openSignMessage(args: {
   })
 }
 
-// PopupOpts removed: inline the opts object type (same fields as before)
 export async function signMessage(
   req: SignMessageArgs,
   opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean; keepPopupOpen?: boolean }
@@ -241,7 +239,6 @@ export async function signMessage(
   return resp.signature
 }
 
-// PopupOpts removed: inline the opts object type (same fields as before)
 export async function sendTransaction(
   req: {
     chainId: number
@@ -281,7 +278,8 @@ export async function sendTransaction(
   return resp.txHash
 }
 
-// NEW: multi-tx (single popup, AmVault executes sequentially)
+// multi-tx: single popup, AmVault executes sequentially.
+// payload.txs triggers multi-tx mode on AmVault side.
 // AmVault should return data.type === 'amvault:txs'
 export async function sendTransactions(
   req: MultiTxReq,
@@ -298,7 +296,7 @@ export async function sendTransactions(
     payload: {
       txs: req.txs,
       failFast: req.failFast ?? true,
-      preflight: req.preflight, // ✅ NEW
+      preflight: req.preflight,
     },
     timeoutMs: opts.timeoutMs ?? 120000,
     debug: !!opts.debug,
@@ -308,4 +306,3 @@ export async function sendTransactions(
   if (!resp.results) throw new Error(resp.error || 'No results returned from AmVault')
   return resp.results
 }
-
