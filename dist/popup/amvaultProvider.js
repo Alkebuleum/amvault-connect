@@ -150,7 +150,10 @@ export async function openSignMessage(args) {
         nonce: args.nonce,
         debug: !!args.debug,
         timeoutMs: (_a = args.timeoutMs) !== null && _a !== void 0 ? _a : 120000,
-        payload: { message: args.message },
+        payload: {
+            message: args.message,
+            session: args.session,
+        },
         keepPopupOpen: !!args.keepPopupOpen,
     });
 }
@@ -167,6 +170,7 @@ export async function signMessage(req, opts) {
         timeoutMs: opts.timeoutMs,
         keepPopupOpen: !!opts.keepPopupOpen,
         message: req.message,
+        session: req.session,
     });
     if (!(resp === null || resp === void 0 ? void 0 : resp.ok))
         throw new Error((resp === null || resp === void 0 ? void 0 : resp.error) || 'Sign rejected');
@@ -184,6 +188,7 @@ export async function sendTransaction(req, opts) {
         gas: req.gas,
         maxFeePerGasGwei: req.maxFeePerGasGwei,
         maxPriorityFeePerGasGwei: req.maxPriorityFeePerGasGwei,
+        session: req.session,
     };
     const resp = await requestPopup({
         method: 'eth_sendTransaction',
@@ -218,6 +223,7 @@ export async function sendTransactions(req, opts) {
             txs: req.txs,
             failFast: (_a = req.failFast) !== null && _a !== void 0 ? _a : true,
             preflight: req.preflight,
+            session: req.session,
         },
         timeoutMs: (_b = opts.timeoutMs) !== null && _b !== void 0 ? _b : 120000,
         debug: !!opts.debug,

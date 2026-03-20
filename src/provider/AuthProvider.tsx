@@ -1,7 +1,7 @@
 import React, { createContext, useEffect, useMemo, useState } from 'react'
 import { verifyMessage } from 'ethers'
 import { openSignin } from '../popup/amvaultProvider'
-import type { AmvaultConnectConfig, AuthContextValue, Session } from '../types'
+import type { AmvaultConnectConfig, AuthContextValue, Session, AmvaultFlowSession } from '../types'
 
 const DEFAULT_TTL = 24 * 60 * 60 * 1000
 export const makeStorageKeys = (prefix: string) => ({
@@ -10,7 +10,7 @@ export const makeStorageKeys = (prefix: string) => ({
 })
 
 export const AuthContext = createContext<AuthContextValue>({
-  session: null, signin: async () => { }, signout: () => { }, status: 'idle', error: null
+  session: null, signin: async (_flowSession?: AmvaultFlowSession) => { }, signout: () => { }, status: 'idle', error: null
 })
 
 export function AuthProvider({
@@ -68,12 +68,14 @@ export function AuthProvider({
     ].join('\\n')
   }
 
-  const signin = async () => {
+  const signin = async (flowSession?: AmvaultFlowSession) => {
     try {
       setError(null); setStatus('checking')
       const nonce = makeNonce()
       localStorage.setItem(keys.nonce, nonce)
       const msg = buildMessage(nonce)
+
+
 
       const resp = await openSignin({
         app: config.appName,
@@ -82,7 +84,8 @@ export function AuthProvider({
         nonce,
         amvaultUrl: config.amvaultUrl,
         debug: !!config.debug,
-        message: msg
+        message: msg,
+        session: flowSession
       })
 
       if (!resp?.ok) throw new Error(resp?.error || 'Sign-in rejected')
@@ -124,10 +127,10 @@ export function AuthProvider({
       }
       if (!ain) ain = `ain-${address.slice(2, 8)}`
 
-      const now = Date.now()
-      const sess: Session = { ain, address, issuedAt: now, expiresAt: now + ttl }
-      localStorage.setItem(keys.session, JSON.stringify(sess))
-      setSession(sess); setStatus('ready')
+      const authNow = Date.now()
+      const walletSession: Session = { ain, address, issuedAt: authNow, expiresAt: authNow + ttl }
+      localStorage.setItem(keys.session, JSON.stringify(walletSession))
+      setSession(walletSession); setStatus('ready')
     } catch (e: any) {
       setError(e?.message || 'Sign-in failed'); setStatus('ready')
     } finally {

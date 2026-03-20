@@ -8,6 +8,7 @@ import type {
   MultiTxReq,
   SendMultiTxResp,
   TxReq,
+  SigninArgs,
 } from '../types'
 
 const STORAGE_FALLBACK_KEYS = ['amid:lastResult', 'amvault:payload']
@@ -174,9 +175,16 @@ export async function openSignin(args: {
   debug?: boolean
   timeoutMs?: number
   message?: string
+  session?: SigninArgs['session']
   keepPopupOpen?: boolean
 }): Promise<SigninResp> {
-  const payload = args.message ? { message: args.message } : undefined
+  const payload =
+    args.message || args.session
+      ? {
+        ...(args.message ? { message: args.message } : {}),
+        ...(args.session ? { session: args.session } : {}),
+      }
+      : undefined
   return requestPopup<SigninResp>({
     method: 'signin',
     app: args.app,

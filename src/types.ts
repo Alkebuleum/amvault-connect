@@ -3,7 +3,7 @@ export type AuthStatus = 'idle' | 'checking' | 'ready' | 'failed'
 
 export type AuthContextValue = {
   session: Session | null
-  signin: () => Promise<void>
+  signin: (flowSession?: AmvaultFlowSession) => Promise<void>
   signout: () => void
   status: AuthStatus
   error: string | null
@@ -14,6 +14,7 @@ export type SigninArgs = {
   chainId: number
   origin: string
   nonce: string
+  session?: AmvaultFlowSession
 }
 
 export type SigninResp = {

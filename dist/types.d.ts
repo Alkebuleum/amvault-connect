@@ -38,6 +38,7 @@ export type TxReq = {
     gas?: number;
     maxFeePerGasGwei?: number;
     maxPriorityFeePerGasGwei?: number;
+    session?: AmvaultFlowSession;
 };
 export type SendTxResp = {
     ok: boolean;
@@ -69,9 +70,17 @@ export type AmvaultConnectConfig = {
     /** When verifying a message returned from AmVault, require `App: appName` to match. Default true. */
     enforceAppName?: boolean;
 };
+export type AmvaultFlowSession = {
+    sessionId: string;
+    flowId?: string;
+    flowStep?: 'login' | 'bridge' | 'swap' | string;
+    startedAt: number;
+    lastActivityAt: number;
+};
 export type SignMessageArgs = {
     chainId: number;
     message: string;
+    session?: AmvaultFlowSession;
 };
 export type SignMessageResp = {
     ok: boolean;
@@ -111,6 +120,7 @@ export type MultiTxReq = {
     }>;
     failFast?: boolean;
     preflight?: MultiTxPreflight;
+    session?: AmvaultFlowSession;
 };
 export type SendMultiTxResp = {
     ok: boolean;

@@ -7,7 +7,7 @@
 git status
 # If it's just your intended edits:
 git add -A
-git commit -m "modify amvaultProvider"
+git commit -m "modify amvaultProvider and types to add session key"
 git push
 
 

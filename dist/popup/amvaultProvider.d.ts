@@ -1,4 +1,4 @@
-import type { SigninResp, SignMessageResp, SignMessageArgs, MultiTxReq, SendMultiTxResp } from '../types';
+import type { SigninResp, SignMessageResp, SignMessageArgs, MultiTxReq, SendMultiTxResp, TxReq } from '../types';
 export declare function openSignin(args: {
     app: string;
     chainId: number;
@@ -19,6 +19,7 @@ export declare function openSignMessage(args: {
     debug?: boolean;
     timeoutMs?: number;
     message: string;
+    session?: SignMessageArgs['session'];
     keepPopupOpen?: boolean;
 }): Promise<SignMessageResp>;
 export declare function signMessage(req: SignMessageArgs, opts: {
@@ -28,15 +29,7 @@ export declare function signMessage(req: SignMessageArgs, opts: {
     debug?: boolean;
     keepPopupOpen?: boolean;
 }): Promise<string>;
-export declare function sendTransaction(req: {
-    chainId: number;
-    to?: string;
-    data?: string;
-    value?: string | number | bigint;
-    gas?: number;
-    maxFeePerGasGwei?: number;
-    maxPriorityFeePerGasGwei?: number;
-}, opts: {
+export declare function sendTransaction(req: TxReq, opts: {
     app: string;
     amvaultUrl: string;
     timeoutMs?: number;
