@@ -7,6 +7,7 @@ import type {
   SignMessageArgs,
   MultiTxReq,
   SendMultiTxResp,
+  TxReq,
 } from '../types'
 
 const STORAGE_FALLBACK_KEYS = ['amid:lastResult', 'amvault:payload']
@@ -199,6 +200,7 @@ export async function openSignMessage(args: {
   debug?: boolean
   timeoutMs?: number
   message: string
+  session?: SignMessageArgs['session']
   keepPopupOpen?: boolean
 }): Promise<SignMessageResp> {
   return requestPopup<SignMessageResp>({
@@ -210,7 +212,10 @@ export async function openSignMessage(args: {
     nonce: args.nonce,
     debug: !!args.debug,
     timeoutMs: args.timeoutMs ?? 120000,
-    payload: { message: args.message },
+    payload: {
+      message: args.message,
+      session: args.session,
+    },
     keepPopupOpen: !!args.keepPopupOpen,
   })
 }
@@ -232,6 +237,7 @@ export async function signMessage(
     timeoutMs: opts.timeoutMs,
     keepPopupOpen: !!opts.keepPopupOpen,
     message: req.message,
+    session: req.session,
   })
 
   if (!resp?.ok) throw new Error(resp?.error || 'Sign rejected')
@@ -240,15 +246,7 @@ export async function signMessage(
 }
 
 export async function sendTransaction(
-  req: {
-    chainId: number
-    to?: string
-    data?: string
-    value?: string | number | bigint
-    gas?: number
-    maxFeePerGasGwei?: number
-    maxPriorityFeePerGasGwei?: number
-  },
+  req: TxReq,
   opts: { app: string; amvaultUrl: string; timeoutMs?: number; debug?: boolean; keepPopupOpen?: boolean }
 ): Promise<string> {
   const origin = window.location.origin
@@ -259,6 +257,7 @@ export async function sendTransaction(
     gas: req.gas,
     maxFeePerGasGwei: req.maxFeePerGasGwei,
     maxPriorityFeePerGasGwei: req.maxPriorityFeePerGasGwei,
+    session: req.session,
   }
 
   const resp = await requestPopup<SendTxResp>({
@@ -297,6 +296,7 @@ export async function sendTransactions(
       txs: req.txs,
       failFast: req.failFast ?? true,
       preflight: req.preflight,
+      session: req.session,
     },
     timeoutMs: opts.timeoutMs ?? 120000,
     debug: !!opts.debug,

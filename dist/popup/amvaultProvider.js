@@ -81,7 +81,7 @@ function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce
                 if (method === 'eth_sendTransaction' && data.type === 'amvault:tx') {
                     return finishOk(data);
                 }
-                // NEW: multi-tx response
+                // multi-tx response
                 if (method === 'eth_sendTransaction' && data.type === 'amvault:txs') {
                     return finishOk(data);
                 }
@@ -105,7 +105,7 @@ function requestPopup({ method, app, chainId, origin, amvaultUrl, payload, nonce
                     if (method === 'eth_sendTransaction' && (data === null || data === void 0 ? void 0 : data.type) === 'amvault:tx') {
                         return finishOk(data);
                     }
-                    // NEW: multi-tx response
+                    // multi-tx response
                     if (method === 'eth_sendTransaction' && (data === null || data === void 0 ? void 0 : data.type) === 'amvault:txs') {
                         return finishOk(data);
                     }
@@ -154,7 +154,6 @@ export async function openSignMessage(args) {
         keepPopupOpen: !!args.keepPopupOpen,
     });
 }
-// PopupOpts removed: inline the opts object type (same fields as before)
 export async function signMessage(req, opts) {
     const origin = window.location.origin;
     const nonce = makeNonce();
@@ -175,7 +174,6 @@ export async function signMessage(req, opts) {
         throw new Error('No signature returned from AmVault');
     return resp.signature;
 }
-// PopupOpts removed: inline the opts object type (same fields as before)
 export async function sendTransaction(req, opts) {
     var _a;
     const origin = window.location.origin;
@@ -204,7 +202,8 @@ export async function sendTransaction(req, opts) {
         throw new Error('No txHash returned from AmVault');
     return resp.txHash;
 }
-// NEW: multi-tx (single popup, AmVault executes sequentially)
+// multi-tx: single popup, AmVault executes sequentially.
+// payload.txs triggers multi-tx mode on AmVault side.
 // AmVault should return data.type === 'amvault:txs'
 export async function sendTransactions(req, opts) {
     var _a, _b;
@@ -218,7 +217,7 @@ export async function sendTransactions(req, opts) {
         payload: {
             txs: req.txs,
             failFast: (_a = req.failFast) !== null && _a !== void 0 ? _a : true,
-            preflight: req.preflight, // ✅ NEW
+            preflight: req.preflight,
         },
         timeoutMs: (_b = opts.timeoutMs) !== null && _b !== void 0 ? _b : 120000,
         debug: !!opts.debug,

@@ -8,6 +8,7 @@ git status
 # If it's just your intended edits:
 git add -A
 git commit -m "modify amvaultProvider"
+git push
 
 
 ## Second publish npm (this is how to publish changes to the sdk)
